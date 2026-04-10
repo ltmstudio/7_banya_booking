@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Autofill (Chrome/Edge): keep inputs consistent with Tailwind styling. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-text-fill-color: rgb(28 25 23); /* stone-900 */
+  caret-color: rgb(28 25 23);
+  -webkit-box-shadow: 0 0 0px 1000px rgb(255 255 255) inset; /* bg-white */
+  box-shadow: 0 0 0px 1000px rgb(255 255 255) inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark textarea:-webkit-autofill,
+.dark textarea:-webkit-autofill:hover,
+.dark textarea:-webkit-autofill:focus,
+.dark select:-webkit-autofill,
+.dark select:-webkit-autofill:hover,
+.dark select:-webkit-autofill:focus {
+  -webkit-text-fill-color: rgb(245 245 244); /* stone-100 */
+  caret-color: rgb(245 245 244);
+  -webkit-box-shadow: 0 0 0px 1000px rgb(68 64 60) inset; /* stone-700 */
+  box-shadow: 0 0 0px 1000px rgb(68 64 60) inset;
+}

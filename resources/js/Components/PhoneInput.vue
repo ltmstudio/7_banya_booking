@@ -8,6 +8,7 @@ import { computed } from 'vue';
 const props = defineProps({
     modelValue: { type: String, default: '' },
     error: { type: String, default: '' },
+    placeholder: { type: String, default: '62724494' },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -34,7 +35,7 @@ const digits = computed({
             inputmode="numeric"
             maxlength="8"
             autocomplete="tel"
-            placeholder="61234567"
+            :placeholder="placeholder"
             class="block w-full border-0 bg-transparent px-3 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:ring-0 dark:text-stone-100 dark:placeholder-stone-500"
         />
     </div>

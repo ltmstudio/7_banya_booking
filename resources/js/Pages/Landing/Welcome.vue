@@ -21,6 +21,7 @@ const props = defineProps({
     rooms: { type: Array, default: () => [] },
     extraServices: { type: Array, default: () => [] },
     popupPromo: { type: Object, default: null },
+    aboutContent: { type: Object, default: () => ({}) },
     landing: { type: Object, default: () => ({}) },
     bookingSettings: { type: Object, default: () => ({ min_hours: 1, max_hours: 10 }) },
 });
@@ -44,7 +45,7 @@ function closePromo() {
             :extra-services="extraServices"
             :booking-settings="bookingSettings"
         />
-        <LandingAbout />
+        <LandingAbout :content="aboutContent" />
         <LandingServices :extra-services="extraServices" />
         <LandingGallery :rooms="rooms" />
         <PopupPromo

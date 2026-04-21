@@ -3,12 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
-class Client extends Model
+class Client extends Authenticatable
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, Notifiable, SoftDeletes;
 
     protected $table = 'clients';
 
@@ -17,13 +18,26 @@ class Client extends Model
         'last_name',
         'phone',
         'birthday',
+        'password',
     ];
 
     protected $casts = [
-        'birthday' => 'date', // 👈 чтобы работало как Carbon объект
+        'birthday' => 'date',
+        'password' => 'hashed',
     ];
 
-    // 👇 scope для именинников
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    /** Полное имя клиента. */
+    public function getFullNameAttribute(): string
+    {
+        return trim($this->first_name.' '.($this->last_name ?? ''));
+    }
+
+    /** Scope именинников на сегодня. */
     public function scopeTodayBirthday($query)
     {
         return $query
@@ -31,8 +45,9 @@ class Client extends Model
             ->whereDay('birthday', now()->day);
     }
 
+    /** Связь клиента с бронями. */
     public function bookings()
     {
-        return $this->hasMany(Booking::class);
+        return $this->hasMany(Booking::class)->latest('booking_date');
     }
 }

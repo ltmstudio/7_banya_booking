@@ -2,14 +2,15 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Booking;
 use App\Models\AuditLog;
+use App\Models\Booking;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 
 class ProcessExpiredBookings extends Command
 {
-    protected $signature   = 'bookings:process-expired';
+    protected $signature = 'bookings:process-expired';
+
     protected $description = 'Cancel unconfirmed and complete finished bookings';
 
     public function handle(): int
@@ -21,10 +22,10 @@ class ProcessExpiredBookings extends Command
         // 1️⃣ Отменяем NEW брони у которых дата прошла
         Booking::where('status', 'new')
             ->where('booking_date', '<', $now->toDateString())
-            ->chunkById(200, function ($bookings) use (&$cancelled, $now) {
+            ->chunkById(200, function ($bookings) use (&$cancelled) {
                 foreach ($bookings as $booking) {
                     $booking->update([
-                        'status'        => 'cancelled',
+                        'status' => 'cancelled',
                         'cancel_reason' => 'Auto-cancelled: booking date has passed.',
                     ]);
                     AuditLog::write('Booking', $booking->id, 'updated',
@@ -36,7 +37,7 @@ class ProcessExpiredBookings extends Command
         // 2️⃣ Завершаем PAID/CONFIRMED брони у которых прошло время уборки
         Booking::whereIn('status', ['paid', 'confirmed'])
             ->whereRaw(
-                "(booking_date::date + cleaning_end_time::time)::timestamp <= ?",
+                '(booking_date::date + cleaning_end_time::time)::timestamp <= ?',
                 [$now]
             )
             ->chunkById(200, function ($bookings) use (&$completed) {

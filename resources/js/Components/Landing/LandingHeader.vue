@@ -2,12 +2,49 @@
 /**
  * Шапка лендинга: лого, навигация, переключатель TK/RU, переключатель темы.
  */
-import { Link, usePage } from '@inertiajs/vue3';
-import { ref, onMounted } from 'vue';
+import { Link, router, usePage } from '@inertiajs/vue3';
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 const isDark = ref(false);
+const homeUrl = route('home');
+const page = usePage();
+const isHomePage = computed(() => page.url === '/' || page.url.startsWith('/?'));
+const isOverHero = ref(true);
+
+/**
+ * Возвращает ссылку на секцию главной страницы, чтобы меню работало и вне лендинга.
+ */
+function homeAnchor(hash) {
+    return `${homeUrl}${hash}`;
+}
+
+/**
+ * Плавно скроллит к указанной секции главной страницы.
+ */
+function smoothScrollToSection(hash) {
+    const id = hash.replace('#', '');
+    const target = document.getElementById(id);
+    if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+/**
+ * Обрабатывает переход по пунктам меню с плавной прокруткой.
+ */
+function handleLandingNavClick(event, hash) {
+    event.preventDefault();
+
+    if (isHomePage.value) {
+        smoothScrollToSection(hash);
+        return;
+    }
+
+    sessionStorage.setItem('landing_anchor', hash);
+    router.visit(homeUrl);
+}
 
 function toggleTheme() {
     isDark.value = !isDark.value;
@@ -15,16 +52,69 @@ function toggleTheme() {
     localStorage.setItem('theme', isDark.value ? 'dark' : 'light');
 }
 
+/**
+ * Обновляет стиль шапки: прозрачная над hero, обычная после hero.
+ */
+function updateHeaderState() {
+    const heroSection = document.getElementById('hero');
+    if (!heroSection) {
+        isOverHero.value = false;
+        return;
+    }
+
+    const heroRect = heroSection.getBoundingClientRect();
+    isOverHero.value = heroRect.bottom > 100;
+}
+
+/**
+ * Базовый стиль пунктов меню: белый над видео, обычный после hero.
+ */
+const navLinkClass = computed(() => (
+    isOverHero.value
+        ? 'rounded-lg px-3 py-2 text-sm font-medium text-white/90 hover:bg-white/15 hover:text-white transition-colors'
+        : 'rounded-lg px-3 py-2 text-sm font-medium text-stone-600 hover:bg-stone-200/80 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-700 dark:hover:text-stone-100 transition-colors'
+));
+
 onMounted(() => {
     isDark.value = document.documentElement.classList.contains('dark');
+    updateHeaderState();
+    window.addEventListener('scroll', updateHeaderState, { passive: true });
+
+    const pendingAnchor = sessionStorage.getItem('landing_anchor') || window.location.hash;
+    if (pendingAnchor) {
+        if (sessionStorage.getItem('landing_anchor')) {
+            sessionStorage.removeItem('landing_anchor');
+        }
+
+        // Даем странице отрисовать секции перед скроллом.
+        requestAnimationFrame(() => {
+            smoothScrollToSection(pendingAnchor);
+        });
+    }
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener('scroll', updateHeaderState);
 });
 </script>
 
 <template>
-    <header class="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-4 border-b border-stone-200/60 bg-stone-50/95 py-4 backdrop-blur-md dark:border-stone-700/60 dark:bg-stone-900/95 md:py-5">
+    <header
+        :class="[
+            'fixed left-1/2 top-0 z-50 flex w-full max-w-6xl -translate-x-1/2 flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 md:py-5 lg:px-8',
+            isOverHero
+                ? 'border-b border-transparent bg-transparent'
+                : 'border-b border-stone-200/60 bg-stone-50/95 backdrop-blur-md dark:border-stone-700/60 dark:bg-stone-900/95',
+        ]"
+    >
         <Link
             href="/"
-            class="flex items-center gap-2 text-xl font-semibold text-stone-800 dark:text-stone-100 hover:text-amber-700 dark:hover:text-amber-400 transition-colors"
+            :class="[
+                'flex items-center gap-2 text-xl font-semibold transition-colors',
+                isOverHero
+                    ? 'text-white hover:text-amber-300'
+                    : 'text-stone-800 hover:text-amber-700 dark:text-stone-100 dark:hover:text-amber-400',
+            ]"
         >
             <span class="flex size-10 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">
                 <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -36,29 +126,47 @@ onMounted(() => {
 
         <nav class="flex items-center gap-1 sm:gap-2">
             <a
-                href="#hero"
-                class="rounded-lg px-3 py-2 text-sm font-medium text-stone-600 hover:bg-stone-200/80 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-700 dark:hover:text-stone-100 transition-colors"
+                :href="homeAnchor('#hero')"
+                @click="handleLandingNavClick($event, '#hero')"
+                :class="navLinkClass"
             >
                 {{ t('landing.header.nav_home') }}
             </a>
             <a
-                href="#about"
-                class="rounded-lg px-3 py-2 text-sm font-medium text-stone-600 hover:bg-stone-200/80 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-700 dark:hover:text-stone-100 transition-colors"
+                :href="homeAnchor('#about')"
+                @click="handleLandingNavClick($event, '#about')"
+                :class="navLinkClass"
             >
                 {{ t('landing.header.nav_about') }}
             </a>
             <a
-                href="#services"
-                class="rounded-lg px-3 py-2 text-sm font-medium text-stone-600 hover:bg-stone-200/80 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-700 dark:hover:text-stone-100 transition-colors"
+                :href="homeAnchor('#services')"
+                @click="handleLandingNavClick($event, '#services')"
+                :class="navLinkClass"
             >
                 {{ t('landing.header.nav_services') }}
             </a>
             <a
-                href="#gallery"
-                class="rounded-lg px-3 py-2 text-sm font-medium text-stone-600 hover:bg-stone-200/80 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-700 dark:hover:text-stone-100 transition-colors"
+                :href="homeAnchor('#gallery')"
+                @click="handleLandingNavClick($event, '#gallery')"
+                :class="navLinkClass"
             >
                 {{ t('landing.header.nav_gallery') }}
             </a>
+            <Link
+                v-if="!$page.props.clientAuth"
+                :href="route('client.login')"
+                class="hidden rounded-lg px-3 py-2 text-sm font-medium text-stone-600 hover:bg-stone-200/80 hover:text-stone-900 transition-colors dark:text-stone-400 dark:hover:bg-stone-700 dark:hover:text-stone-100"
+            >
+                👤 {{ t('landing.header.cabinet') }}
+            </Link>
+            <Link
+                v-else
+                :href="route('client.cabinet')"
+                class="rounded-lg px-3 py-2 text-sm font-medium text-amber-600 transition-colors hover:bg-amber-50 dark:hover:bg-amber-900/20"
+            >
+                👤 {{ $page.props.clientAuth.first_name }}
+            </Link>
             <button
                 type="button"
                 @click="toggleTheme"

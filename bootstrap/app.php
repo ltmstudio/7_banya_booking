@@ -16,9 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('bookings:process-expired')
-        ->everyFiveMinutes()
-        ->withoutOverlapping()
-        ->runInBackground();
+            ->everyFiveMinutes()
+            ->withoutOverlapping()
+            ->runInBackground();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
@@ -27,7 +27,9 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        //
+        $middleware->alias([
+            'client.auth' => \App\Http\Middleware\ClientAuth::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

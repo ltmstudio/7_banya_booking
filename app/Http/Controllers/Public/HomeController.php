@@ -7,6 +7,8 @@ use App\Models\ExtraService;
 use App\Models\PopupPromo;
 use App\Models\Room;
 use App\Models\Setting;
+use App\Services\SiteContentService;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -14,6 +16,8 @@ use Inertia\Response;
 /** Главная страница лендинга: комнаты, доп. услуги, промо-попап. */
 class HomeController extends Controller
 {
+    public function __construct(private readonly SiteContentService $siteContentService) {}
+
     public function index(): Response
     {
         \Log::info('HomeController index start');
@@ -28,7 +32,7 @@ class HomeController extends Controller
             ->map(fn ($s) => [
                 'id' => $s->id,
                 'name' => $s->getTranslations('name') ?: ['ru' => $s->name, 'tk' => $s->name],
-                'icon_url' => $s->icon_path ? \Illuminate\Support\Facades\Storage::url($s->icon_path) : null,
+                'icon_url' => $s->icon_path ? Storage::url($s->icon_path) : null,
                 'price' => (float) $s->price,
             ])
             ->values()
@@ -48,7 +52,7 @@ class HomeController extends Controller
         }
 
         return Inertia::render('Landing/Welcome', [
-            'canLogin' => \Illuminate\Support\Facades\Route::has('login'),
+            'canLogin' => Route::has('login'),
             'bookingSettings' => [
                 'min_hours' => (int) Setting::get('booking_min_hours', 1),
                 'max_hours' => (int) Setting::get('booking_max_hours', 10),
@@ -76,6 +80,16 @@ class HomeController extends Controller
             ])->values()->all(),
             'extraServices' => $extraServices,
             'popupPromo' => $popupPromoData,
+            'aboutContent' => [
+                'title' => [
+                    'ru' => $this->siteContentService->getLocalized('about_title', 'ru'),
+                    'tk' => $this->siteContentService->getLocalized('about_title', 'tk'),
+                ],
+                'text' => [
+                    'ru' => $this->siteContentService->getLocalized('about', 'ru'),
+                    'tk' => $this->siteContentService->getLocalized('about', 'tk'),
+                ],
+            ],
             'landing' => [],
         ]);
     }

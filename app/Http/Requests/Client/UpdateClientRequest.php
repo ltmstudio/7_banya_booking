@@ -29,7 +29,7 @@ class UpdateClientRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'phone.regex' => 'Телефон должен быть в формате +993 и 8 цифр (например, +99361234567).',
+            'phone.regex' => 'Телефон должен быть в формате +993 и 8 цифр (например, +99362724494).',
         ];
     }
 }

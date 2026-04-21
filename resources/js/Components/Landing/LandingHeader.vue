@@ -12,6 +12,7 @@ const homeUrl = route('home');
 const page = usePage();
 const isHomePage = computed(() => page.url === '/' || page.url.startsWith('/?'));
 const isOverHero = ref(true);
+const headerRef = ref(null);
 
 /**
  * Возвращает ссылку на секцию главной страницы, чтобы меню работало и вне лендинга.
@@ -63,7 +64,9 @@ function updateHeaderState() {
     }
 
     const heroRect = heroSection.getBoundingClientRect();
-    isOverHero.value = heroRect.bottom > 100;
+    const headerHeight = headerRef.value?.offsetHeight ?? 0;
+    // Меняем фон только когда хедер полностью вышел из hero-видео секции.
+    isOverHero.value = heroRect.bottom > headerHeight;
 }
 
 /**
@@ -71,14 +74,15 @@ function updateHeaderState() {
  */
 const navLinkClass = computed(() => (
     isOverHero.value
-        ? 'rounded-lg px-3 py-2 text-sm font-medium text-white/90 hover:bg-white/15 hover:text-white transition-colors'
-        : 'rounded-lg px-3 py-2 text-sm font-medium text-stone-600 hover:bg-stone-200/80 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-700 dark:hover:text-stone-100 transition-colors'
+        ? 'rounded-lg px-2 py-1.5 text-xs font-medium text-white/90 hover:bg-white/15 hover:text-white transition-colors sm:px-3 sm:py-2 sm:text-sm'
+        : 'rounded-lg px-2 py-1.5 text-xs font-medium text-stone-600 hover:bg-stone-200/80 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-700 dark:hover:text-stone-100 transition-colors sm:px-3 sm:py-2 sm:text-sm'
 ));
 
 onMounted(() => {
     isDark.value = document.documentElement.classList.contains('dark');
     updateHeaderState();
     window.addEventListener('scroll', updateHeaderState, { passive: true });
+    window.addEventListener('resize', updateHeaderState, { passive: true });
 
     const pendingAnchor = sessionStorage.getItem('landing_anchor') || window.location.hash;
     if (pendingAnchor) {
@@ -95,13 +99,15 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     window.removeEventListener('scroll', updateHeaderState);
+    window.removeEventListener('resize', updateHeaderState);
 });
 </script>
 
 <template>
     <header
+        ref="headerRef"
         :class="[
-            'fixed left-1/2 top-0 z-50 flex w-full max-w-6xl -translate-x-1/2 flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 md:py-5 lg:px-8',
+            'fixed left-1/2 top-0 z-50 flex w-full -translate-x-1/2 flex-wrap items-start justify-between gap-3 px-4 py-4 sm:items-center sm:gap-4 sm:px-6 md:py-5 lg:px-8',
             isOverHero
                 ? 'border-b border-transparent bg-transparent'
                 : 'border-b border-stone-200/60 bg-stone-50/95 backdrop-blur-md dark:border-stone-700/60 dark:bg-stone-900/95',
@@ -124,7 +130,51 @@ onBeforeUnmount(() => {
             <span>{{ t('landing.header.brand') }}</span>
         </Link>
 
-        <nav class="flex items-center gap-1 sm:gap-2">
+        <!-- На узких экранах: тема и язык справа от логотипа. -->
+        <div class="ml-auto flex items-center gap-2 sm:hidden">
+            <button
+                type="button"
+                @click="toggleTheme"
+                class="flex size-8 items-center justify-center rounded-lg border border-stone-300 bg-white text-stone-600 transition-colors hover:bg-stone-100 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700"
+                :title="isDark ? t('landing.header.theme_light') : t('landing.header.theme_dark')"
+            >
+                <svg v-if="isDark" class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <svg v-else class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+            </button>
+            <div class="flex overflow-hidden rounded-lg border border-stone-300 dark:border-stone-600">
+                <Link
+                    :href="route('change.lang', { lang: 'tk' })"
+                    preserve-scroll
+                    :class="[
+                        'block px-2 py-1.5 text-xs font-medium transition-colors',
+                        $page.props.locale === 'tk'
+                            ? 'bg-amber-600 text-white'
+                            : 'bg-white text-stone-600 hover:bg-stone-100 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700'
+                    ]"
+                >
+                    TK
+                </Link>
+                <Link
+                    :href="route('change.lang', { lang: 'ru' })"
+                    preserve-scroll
+                    :class="[
+                        'block border-l border-stone-300 px-2 py-1.5 text-xs font-medium transition-colors dark:border-stone-600',
+                        $page.props.locale === 'ru'
+                            ? 'bg-amber-600 text-white'
+                            : 'bg-white text-stone-600 hover:bg-stone-100 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700'
+                    ]"
+                >
+                    RU
+                </Link>
+            </div>
+        </div>
+
+        <!-- Навигация с горизонтальным скроллом на телефонах. -->
+        <nav class="flex w-full flex-wrap items-center justify-center gap-1 pb-1 sm:w-auto sm:justify-start sm:gap-2 sm:pb-0">
             <a
                 :href="homeAnchor('#hero')"
                 @click="handleLandingNavClick($event, '#hero')"
@@ -167,46 +217,46 @@ onBeforeUnmount(() => {
             >
                 👤 {{ $page.props.clientAuth.first_name }}
             </Link>
-            <button
-                type="button"
-                @click="toggleTheme"
-                class="ml-2 flex size-9 items-center justify-center rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors"
-                :title="isDark ? t('landing.header.theme_light') : t('landing.header.theme_dark')"
-            >
-                <!-- Sun icon (light mode) -->
-                <svg v-if="isDark" class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                <!-- Moon icon (dark mode) -->
-                <svg v-else class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-            </button>
-            <div class="ml-1 flex rounded-lg border border-stone-300 dark:border-stone-600 overflow-hidden">
-                <Link
-                    :href="route('change.lang', { lang: 'tk' })"
-                    preserve-scroll
-                    :class="[
-                        'px-3 py-2 text-sm font-medium transition-colors block',
-                        $page.props.locale === 'tk'
-                            ? 'bg-amber-600 text-white'
-                            : 'bg-white text-stone-600 hover:bg-stone-100 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700'
-                    ]"
+            <div class="ml-2 hidden items-center gap-2 sm:flex">
+                <button
+                    type="button"
+                    @click="toggleTheme"
+                    class="flex size-9 items-center justify-center rounded-lg border border-stone-300 bg-white text-stone-600 transition-colors hover:bg-stone-100 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700"
+                    :title="isDark ? t('landing.header.theme_light') : t('landing.header.theme_dark')"
                 >
-                    TK
-                </Link>
-                <Link
-                    :href="route('change.lang', { lang: 'ru' })"
-                    preserve-scroll
-                    :class="[
-                        'px-3 py-2 text-sm font-medium transition-colors border-l border-stone-300 dark:border-stone-600 block',
-                        $page.props.locale === 'ru'
-                            ? 'bg-amber-600 text-white'
-                            : 'bg-white text-stone-600 hover:bg-stone-100 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700'
-                    ]"
-                >
-                    RU
-                </Link>
+                    <svg v-if="isDark" class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <svg v-else class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                </button>
+                <div class="flex overflow-hidden rounded-lg border border-stone-300 dark:border-stone-600">
+                    <Link
+                        :href="route('change.lang', { lang: 'tk' })"
+                        preserve-scroll
+                        :class="[
+                            'block px-3 py-2 text-sm font-medium transition-colors',
+                            $page.props.locale === 'tk'
+                                ? 'bg-amber-600 text-white'
+                                : 'bg-white text-stone-600 hover:bg-stone-100 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700'
+                        ]"
+                    >
+                        TK
+                    </Link>
+                    <Link
+                        :href="route('change.lang', { lang: 'ru' })"
+                        preserve-scroll
+                        :class="[
+                            'block border-l border-stone-300 px-3 py-2 text-sm font-medium transition-colors dark:border-stone-600',
+                            $page.props.locale === 'ru'
+                                ? 'bg-amber-600 text-white'
+                                : 'bg-white text-stone-600 hover:bg-stone-100 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700'
+                        ]"
+                    >
+                        RU
+                    </Link>
+                </div>
             </div>
         </nav>
     </header>

@@ -22,7 +22,7 @@ const t = computed(() => usePage().props.landing?.map || {});
             aria-hidden="true"
         />
 
-        <div class="relative w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
             <LandingHeader />
             <main class="pb-16 md:pb-24">
                 <slot />
@@ -31,7 +31,7 @@ const t = computed(() => usePage().props.landing?.map || {});
                 <h3 class="mb-4 text-lg font-semibold text-stone-800 dark:text-stone-200">{{ t.how_to_find || 'Как нас найти' }}</h3>
                 <LandingMap :latitude="37.92160928021097" :longitude="58.41173710301474" title="7-ой бани" />
             </div>
-            <LandingFooter />
         </div>
+        <LandingFooter />
     </div>
 </template>

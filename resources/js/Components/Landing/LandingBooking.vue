@@ -29,16 +29,25 @@ const availability = ref({});
 const checking = ref(false);
 
 onMounted(() => {
-    const obs = new IntersectionObserver(
-        ([e]) => {
-            if (e?.isIntersecting) {
-                cardsVisible.value = true;
-                obs.disconnect();
-            }
-        },
-        { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
-    );
-    if (cardsRef.value) obs.observe(cardsRef.value);
+    if (!cardsRef.value || typeof window === 'undefined' || !('IntersectionObserver' in window)) {
+        cardsVisible.value = true;
+    } else {
+        const obs = new IntersectionObserver(
+            ([e]) => {
+                if (e?.isIntersecting) {
+                    cardsVisible.value = true;
+                    obs.disconnect();
+                }
+            },
+            { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
+        );
+        obs.observe(cardsRef.value);
+    }
+
+    // Fallback: если observer не сработал (иногда на мобильных), карточки всё равно показываем.
+    setTimeout(() => {
+        cardsVisible.value = true;
+    }, 800);
 
     // Первая проверка доступности при открытии блока бронирования.
     handleCheck();
@@ -157,7 +166,7 @@ function onCloseForm() {
         </div>
 
         <!-- Карточки комнат -->
-        <div ref="cardsRef" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div ref="cardsRef" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <RoomCard
                 v-for="(room, i) in filteredRooms"
                 :key="room.id"

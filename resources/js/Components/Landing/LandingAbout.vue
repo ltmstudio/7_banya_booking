@@ -18,7 +18,7 @@ const currentLocale = computed(() => page.props.locale || 'ru');
 </script>
 
 <template>
-    <section id="about" class="scroll-mt-20 min-h-screen flex flex-col justify-center py-12 md:py-16">
+    <section id="about" class="scroll-mt-20 py-6 md:py-8">
         <div class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-stone-200/80 dark:bg-stone-800/50 dark:ring-stone-700 md:p-10">
             <h2 class="text-2xl font-bold text-stone-900 dark:text-white md:text-3xl">
                 {{ props.content.title?.[currentLocale] || t('landing.about.title') }}
